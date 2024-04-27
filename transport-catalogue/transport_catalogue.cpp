@@ -8,12 +8,12 @@
 
 namespace data {
 void TransportCatalogue::AddBusRoute(std::string_view bus_name, const std::vector<std::string_view>& stops) {
-    buses_catalog_.push_back(Bus{std::string(bus_name)});
-    RouteType result;
+    std::vector <const Stop*> route;
     for (auto& stop : stops) {
-        result.push_back(stops_[stop]);
+        route.push_back(stops_[stop]);
     }
-    routes_.insert({ buses_catalog_.back().name, std::move(result) });
+    buses_catalog_.push_back(Bus{std::string(bus_name), std::move(route) });
+    buses_.insert({buses_catalog_.back().name, &buses_catalog_.back()});
 }
 
 void TransportCatalogue::AddStop(std::string_view stop_name, const geo::Coordinates& coordinates) {
@@ -21,35 +21,35 @@ void TransportCatalogue::AddStop(std::string_view stop_name, const geo::Coordina
     stops_.insert({ stops_catalog_.back().name, &stops_catalog_.back() });
 }
 
-TransportCatalogue::RouteType TransportCatalogue::GetRoute(std::string_view bus_name) const {
-    if (routes_.count(bus_name) > 0) {
-        return routes_.at(bus_name);
+std::vector <const Stop*> TransportCatalogue::GetRoute(std::string_view bus_name) const {
+    if (buses_.count(bus_name) > 0) {
+        return buses_.at(bus_name)->route;
     }
     return {};
 }
 
-geo::Coordinates TransportCatalogue::GetStop(std::string_view stop_name) const {
-    return stops_.at(stop_name)->coordinates;
+const Stop* TransportCatalogue::GetStop(std::string_view stop_name) const {
+    return stops_.at(stop_name);
 }
 
 size_t TransportCatalogue::GetStopsOfBus(std::string_view bus_name) const {
-    return routes_.at(bus_name).size();
+    return buses_.at(bus_name)->route.size();
 }
 
 size_t TransportCatalogue::GetUniqueStopsOfBus(const std::string_view bus_name) const {
     std::unordered_set<std::string_view> unique_stops;
-    for (const auto& stop_ptr : routes_.at(bus_name)) {
+    for (const auto& stop_ptr : buses_.at(bus_name)->route) {
         unique_stops.insert(stop_ptr->name);
     }
     return unique_stops.size();
 }
 
 double TransportCatalogue::GetBusRouteLength(const std::string_view bus_name) const {
-    const auto it_begin = routes_.at(bus_name).begin();
-    const auto it_end = routes_.at((bus_name)).end();
+    const auto it_begin = buses_.at(bus_name)->route.begin();
+    const auto it_end = buses_.at((bus_name))->route.end();
     double result = 0;
     for (auto it = it_begin; it + 1 != it_end; ++it) {
-        result += ComputeDistance((*it)->coordinates, (*(it + 1))->coordinates);
+        result += geo::ComputeDistance((*it)->coordinates, (*(it + 1))->coordinates);
     }
     return result;
 }
@@ -58,9 +58,9 @@ bool TransportCatalogue::GetBusesOfStop(std::string_view stop_name, std::set<std
     if (stops_.count(stop_name) == 0) {
         return false;
     }
-    for (auto& [bus, stops] : routes_) {
-        for (const auto stop_value : stops) {
-            if (stop_value->name == stop_name) {
+    for (auto& [bus, stop] : buses_) {
+        for (const auto stop_ptr : stop->route) {
+            if (stop_ptr->name == stop_name) {
                 buses.insert(bus);
             }
         }
