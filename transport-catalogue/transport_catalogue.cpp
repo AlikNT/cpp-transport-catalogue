@@ -21,15 +21,18 @@ void TransportCatalogue::AddStop(std::string_view stop_name, const geo::Coordina
     stops_.insert({ stops_catalog_.back().name, &stops_catalog_.back() });
 }
 
-std::vector <const Stop*> TransportCatalogue::GetRoute(std::string_view bus_name) const {
+const Bus* TransportCatalogue::GetRoute(std::string_view bus_name) const {
     if (buses_.count(bus_name) > 0) {
-        return buses_.at(bus_name)->route;
+        return buses_.at(bus_name);
     }
-    return {};
+    return nullptr;
 }
 
 const Stop* TransportCatalogue::GetStop(std::string_view stop_name) const {
-    return stops_.at(stop_name);
+    if (stops_.count(stop_name) > 0) {
+        return stops_.at(stop_name);
+    }
+    return nullptr;
 }
 
 size_t TransportCatalogue::GetStopsOfBus(std::string_view bus_name) const {

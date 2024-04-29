@@ -19,7 +19,8 @@ request::StatCommand ParseRequest(std::string_view line) {
 namespace request {
 
 void PrintStatOfBus(const StatCommand& stat_command, const data::TransportCatalogue& transport_catalogue, std::ostream& output) {
-	if (transport_catalogue.GetRoute(stat_command.description).empty()) {
+    auto bus_ptr = transport_catalogue.GetRoute(stat_command.description);
+	if (!bus_ptr || bus_ptr->route.empty()) {
 		output << "Bus "s << stat_command.description << ": not found"s << std::endl;
 	}
 	else {
