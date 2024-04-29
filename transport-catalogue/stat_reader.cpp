@@ -20,15 +20,15 @@ namespace request {
 
 void PrintStatOfBus(const StatCommand& stat_command, const data::TransportCatalogue& transport_catalogue, std::ostream& output) {
     auto bus_ptr = transport_catalogue.GetRoute(stat_command.description);
-	if (!bus_ptr || bus_ptr->route.empty()) {
-		output << "Bus "s << stat_command.description << ": not found"s << std::endl;
-	}
-	else {
-		std::string output_string = "Bus "s + stat_command.description + ": "s + std::to_string(transport_catalogue.GetStopsOfBus(stat_command.description));
-		output_string += " stops on route, "s + std::to_string(transport_catalogue.GetUniqueStopsOfBus(stat_command.description));
-		output_string += " unique stops, ";
-		output << output_string << std::setprecision(6) << transport_catalogue.GetBusRouteLength(stat_command.description) << " route length"s << std::endl;
-	}
+    if (!bus_ptr || bus_ptr->route.empty()) {
+        output << "Bus "s << stat_command.description << ": not found"s << std::endl;
+    }
+    else {
+        std::string output_string = "Bus "s + stat_command.description + ": "s + std::to_string(transport_catalogue.GetStopsOfBus(stat_command.description));
+        output_string += " stops on route, "s + std::to_string(transport_catalogue.GetUniqueStopsOfBus(stat_command.description));
+        output_string += " unique stops, ";
+        output << output_string << std::setprecision(6) << transport_catalogue.GetBusRouteLength(stat_command.description) << " route length"s << std::endl;
+    }
 }
 
 void PrintStatOfStop(const StatCommand& stat_command, const data::TransportCatalogue& transport_catalogue, std::ostream& output) {
