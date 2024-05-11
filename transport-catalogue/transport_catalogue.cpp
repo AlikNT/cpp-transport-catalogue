@@ -1,15 +1,17 @@
 #include <numeric>
 #include <set>
-#include "transport_catalogue.h"
-
 #include <algorithm>
 #include <unordered_set>
 
+#include "transport_catalogue.h"
 
 namespace data {
 void TransportCatalogue::AddBusRoute(std::string_view bus_name, const std::vector<std::string_view>& stops) {
     std::vector <const Stop*> route;
     for (auto& stop : stops) {
+        if (stops_.count(stop) == 0) {
+            AddStop(stop, {});
+        }
         route.push_back(stops_[stop]);
     }
     buses_catalog_.push_back(Bus{std::string(bus_name), std::move(route) });
@@ -17,8 +19,12 @@ void TransportCatalogue::AddBusRoute(std::string_view bus_name, const std::vecto
 }
 
 void TransportCatalogue::AddStop(std::string_view stop_name, const geo::Coordinates& coordinates) {
-    stops_catalog_.push_back(Stop{ std::string(stop_name), coordinates });
-    stops_.insert({ stops_catalog_.back().name, &stops_catalog_.back() });
+    if (stops_.count(stop_name) == 0) {
+        stops_catalog_.push_back(Stop{std::string(stop_name), coordinates});
+        stops_[stops_catalog_.back().name] = &stops_catalog_.back();
+    } else {
+        const_cast<Stop*>(stops_[stop_name])->coordinates = coordinates;
+    }
 }
 
 const Bus* TransportCatalogue::GetRoute(std::string_view bus_name) const {
@@ -47,12 +53,31 @@ size_t TransportCatalogue::GetUniqueStopsOfBus(const std::string_view bus_name) 
     return unique_stops.size();
 }
 
-double TransportCatalogue::GetBusRouteLength(const std::string_view bus_name) const {
+double TransportCatalogue::GetBusRouteStraightLength(std::string_view bus_name) const {
     const auto it_begin = buses_.at(bus_name)->route.begin();
-    const auto it_end = buses_.at((bus_name))->route.end();
+    const auto it_end = buses_.at(bus_name)->route.end();
     double result = 0;
     for (auto it = it_begin; it + 1 != it_end; ++it) {
         result += geo::ComputeDistance((*it)->coordinates, (*(it + 1))->coordinates);
+    }
+    return result;
+}
+
+void TransportCatalogue::SetStopsDistance(std::string_view stop1, std::string_view stop2, int distance) {
+    distances_[std::pair{std::string_view(stops_[stop1]->name), std::string_view(stops_[stop2]->name)}] = distance;
+}
+
+
+int TransportCatalogue::GetBusRouteFactLength(std::string_view bus_name) const {
+    const auto it_begin = buses_.at(bus_name)->route.begin();
+    const auto it_end = buses_.at(bus_name)->route.end();
+    int result = 0;
+    for (auto it = it_begin; it + 1 != it_end; ++it) {
+        if (distances_.count({(*it)->name, (*(it + 1))->name}) > 0) {
+            result += distances_.at({(*it)->name, (*(it + 1))->name});
+        } else {
+            result += distances_.at({(*(it + 1))->name, (*it)->name});
+        }
     }
     return result;
 }
@@ -69,5 +94,12 @@ bool TransportCatalogue::GetBusesOfStop(std::string_view stop_name, std::set<std
         }
     }
     return true;
+}
+
+std::size_t StopsHasher::operator()(const std::pair<std::string_view, std::string_view>& p) const {
+    size_t h_s1 = d_hasher(p.first);
+    size_t h_s2 = d_hasher(p.second) * 37;
+
+    return h_s1 + h_s2;
 }
 } // namespace data

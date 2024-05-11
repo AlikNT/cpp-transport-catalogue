@@ -27,7 +27,9 @@ void PrintStatOfBus(const StatCommand& stat_command, const data::TransportCatalo
         std::string output_string = "Bus "s + stat_command.description + ": "s + std::to_string(transport_catalogue.GetStopsOfBus(stat_command.description));
         output_string += " stops on route, "s + std::to_string(transport_catalogue.GetUniqueStopsOfBus(stat_command.description));
         output_string += " unique stops, ";
-        output << output_string << std::setprecision(6) << transport_catalogue.GetBusRouteLength(stat_command.description) << " route length"s << std::endl;
+        int fact_route_length = transport_catalogue.GetBusRouteFactLength(stat_command.description);
+        double curvature = fact_route_length / transport_catalogue.GetBusRouteStraightLength(stat_command.description);
+        output << output_string << std::setprecision(6) << fact_route_length << " route length, "s << curvature << " curvature"s <<  std::endl;
     }
 }
 

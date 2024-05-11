@@ -3,30 +3,21 @@
 #include <algorithm>
 #include <cassert>
 #include <iterator>
+#include <regex>
 
 using namespace std::literals;
 
 namespace input {
+
 /**
- * Парсит строку вида "10.123,  -30.1837" и возвращает пару координат (широта, долгота)
+ * Парсит координаты (широта, долгота) из вектора параметров
  */
-geo::Coordinates ParseCoordinates(std::string_view str) {
-    static const double nan = std::nan("");
-
-    auto not_space = str.find_first_not_of(' ');
-    auto comma = str.find(',');
-
-    if (comma == str.npos) {
-        return {nan, nan};
-    }
-
-    auto not_space2 = str.find_first_not_of(' ', comma + 1);
-
-    double lat = std::stod(std::string(str.substr(not_space, comma - not_space)));
-    double lng = std::stod(std::string(str.substr(not_space2)));
-
+geo::Coordinates ParseCoordinates(const std::vector<std::string_view>& params) {
+    double lat = std::stod(std::string(params[0]));
+    double lng = std::stod(std::string(params[1]));
     return {lat, lng};
 }
+
 } // namespace input
 
 
@@ -81,6 +72,33 @@ std::vector<std::string_view> ParseRoute(std::string_view route) {
 
     return results;
 }
+/**
+ * Парсит фактический расстояния до других остановок
+ */
+std::vector<std::pair<std::string, int>> ParseDistances(const std::vector<std::string_view>& params) {
+    std::regex distance_pattern(R"(^\d+(?=m))");
+    std::regex stop_pattern(R"(to (.+))");
+    std::smatch distance_match;
+    std::smatch stop_match;
+
+    std::vector<std::pair<std::string, int>> results;
+
+    for (size_t i = 2; i < params.size(); ++i) {
+        std::string input = std::string(params[i]);
+        if (!std::regex_search(input, distance_match, distance_pattern)) {
+            return {};
+        }
+        if (!std::regex_search(input, stop_match, stop_pattern)) {
+            return {};
+        }
+        results.emplace_back(stop_match[1], std::stoi(distance_match[0]));
+    }
+    return results;
+}
+
+std::vector<std::string_view> ParseStopLine(std::string_view stop_line) {
+    return detail::Split(stop_line, ',');
+}
 
 CommandDescription ParseCommandDescription(std::string_view line) {
     auto colon_pos = line.find(':');
@@ -114,11 +132,15 @@ void InputReader::ApplyCommands([[maybe_unused]] data::TransportCatalogue& catal
     // Реализуйте метод самостоятельно
     for (auto& command : commands_) {
         if (command.command == "Stop"s) {
-            catalog.AddStop(command.id, ParseCoordinates(command.description));
-        }
-    }
-    for (auto& command : commands_) {
-        if (command.command == "Bus"s) {
+            std::vector<std::string_view> params = ParseStopLine(command.description);
+            catalog.AddStop(command.id, ParseCoordinates(params));
+            for (const auto& [stop, distance] : ParseDistances(params)) {
+                if (!catalog.GetStop(stop)) {
+                    catalog.AddStop(stop, {});
+                }
+                catalog.SetStopsDistance(command.id, stop, distance);
+            }
+        } else if (command.command == "Bus"s) {
             catalog.AddBusRoute(command.id, ParseRoute(command.description));
         }
     }
