@@ -41,15 +41,15 @@ public:
 
     const Stop* GetStop(std::string_view stop_name) const;
 
-    size_t GetStopsOfBus(std::string_view bus_name) const;
+    size_t GetStopsOfBus(const Bus *bus_ptr) const;
 
-    size_t GetUniqueStopsOfBus(std::string_view bus_name) const;
+    size_t GetUniqueStopsOfBus(const Bus *bus_ptr) const;
 
-    double GetBusRouteStraightLength(std::string_view bus_name) const;
+    double GetBusRouteStraightLength(const Bus *bus_ptr) const;
 
-    int GetBusRouteFactLength(std::string_view bus_name) const;
+    int GetBusRouteFactLength(const Bus *bus_ptr) const;
 
-    bool GetBusesOfStop(std::string_view stop_name, std::set<std::string_view>& buses) const;
+    std::set<std::string_view> GetBusesOfStop(const Stop *stop_ptr_arg) const;
 
     void SetStopsDistance(std::string_view stop1, std::string_view stop2, int distance);
 

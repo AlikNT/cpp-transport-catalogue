@@ -2,6 +2,7 @@
 #include <set>
 #include <algorithm>
 #include <unordered_set>
+#include <stdexcept>
 
 #include "transport_catalogue.h"
 
@@ -41,21 +42,21 @@ const Stop* TransportCatalogue::GetStop(std::string_view stop_name) const {
     return nullptr;
 }
 
-size_t TransportCatalogue::GetStopsOfBus(std::string_view bus_name) const {
-    return buses_.at(bus_name)->route.size();
+size_t TransportCatalogue::GetStopsOfBus(const Bus *bus_ptr) const {
+    return bus_ptr->route.size();
 }
 
-size_t TransportCatalogue::GetUniqueStopsOfBus(const std::string_view bus_name) const {
+size_t TransportCatalogue::GetUniqueStopsOfBus(const Bus *bus_ptr) const {
     std::unordered_set<std::string_view> unique_stops;
-    for (const auto& stop_ptr : buses_.at(bus_name)->route) {
+    for (const auto& stop_ptr : bus_ptr->route) {
         unique_stops.insert(stop_ptr->name);
     }
     return unique_stops.size();
 }
 
-double TransportCatalogue::GetBusRouteStraightLength(std::string_view bus_name) const {
-    const auto it_begin = buses_.at(bus_name)->route.begin();
-    const auto it_end = buses_.at(bus_name)->route.end();
+double TransportCatalogue::GetBusRouteStraightLength(const Bus *bus_ptr) const {
+    const auto it_begin = bus_ptr->route.begin();
+    const auto it_end = bus_ptr->route.end();
     double result = 0;
     for (auto it = it_begin; it + 1 != it_end; ++it) {
         result += geo::ComputeDistance((*it)->coordinates, (*(it + 1))->coordinates);
@@ -68,9 +69,9 @@ void TransportCatalogue::SetStopsDistance(std::string_view stop1, std::string_vi
 }
 
 
-int TransportCatalogue::GetBusRouteFactLength(std::string_view bus_name) const {
-    const auto it_begin = buses_.at(bus_name)->route.begin();
-    const auto it_end = buses_.at(bus_name)->route.end();
+int TransportCatalogue::GetBusRouteFactLength(const Bus *bus_ptr) const {
+    const auto it_begin = bus_ptr->route.begin();
+    const auto it_end = bus_ptr->route.end();
     int result = 0;
     for (auto it = it_begin; it + 1 != it_end; ++it) {
         if (distances_.count({(*it)->name, (*(it + 1))->name}) > 0) {
@@ -82,18 +83,16 @@ int TransportCatalogue::GetBusRouteFactLength(std::string_view bus_name) const {
     return result;
 }
 
-bool TransportCatalogue::GetBusesOfStop(std::string_view stop_name, std::set<std::string_view>& buses) const {
-    if (stops_.count(stop_name) == 0) {
-        return false;
-    }
-    for (auto& [bus, stop] : buses_) {
-        for (const auto stop_ptr : stop->route) {
-            if (stop_ptr->name == stop_name) {
-                buses.insert(bus);
+std::set<std::string_view> TransportCatalogue::GetBusesOfStop(const Stop* stop_ptr_arg) const {
+    std::set<std::string_view> buses;
+    for (auto& [bus_name, bus_ptr] : buses_) {
+        for (const auto stop_ptr : bus_ptr->route) {
+            if (stop_ptr == stop_ptr_arg) {
+                buses.insert(bus_name);
             }
         }
     }
-    return true;
+    return buses;
 }
 
 std::size_t StopsHasher::operator()(const std::pair<std::string_view, std::string_view>& p) const {

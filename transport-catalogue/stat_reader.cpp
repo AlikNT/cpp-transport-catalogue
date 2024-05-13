@@ -1,8 +1,7 @@
 #include <iomanip>
-#include "stat_reader.h"
-
 #include <set>
 
+#include "stat_reader.h"
 #include "input_reader.h"
 
 using namespace std::literals;
@@ -24,32 +23,31 @@ void PrintStatOfBus(const StatCommand& stat_command, const data::TransportCatalo
         output << "Bus "s << stat_command.description << ": not found"s << std::endl;
     }
     else {
-        std::string output_string = "Bus "s + stat_command.description + ": "s + std::to_string(transport_catalogue.GetStopsOfBus(stat_command.description));
-        output_string += " stops on route, "s + std::to_string(transport_catalogue.GetUniqueStopsOfBus(stat_command.description));
+        std::string output_string = "Bus "s + stat_command.description + ": "s + std::to_string(transport_catalogue.GetStopsOfBus(bus_ptr));
+        output_string += " stops on route, "s + std::to_string(transport_catalogue.GetUniqueStopsOfBus(bus_ptr));
         output_string += " unique stops, ";
-        int fact_route_length = transport_catalogue.GetBusRouteFactLength(stat_command.description);
-        double curvature = fact_route_length / transport_catalogue.GetBusRouteStraightLength(stat_command.description);
+        int fact_route_length = transport_catalogue.GetBusRouteFactLength(bus_ptr);
+        double curvature = fact_route_length / transport_catalogue.GetBusRouteStraightLength(bus_ptr);
         output << output_string << std::setprecision(6) << fact_route_length << " route length, "s << curvature << " curvature"s <<  std::endl;
     }
 }
 
 void PrintStatOfStop(const StatCommand& stat_command, const data::TransportCatalogue& transport_catalogue, std::ostream& output) {
-    std::set<std::string_view> buses;
-    if (!transport_catalogue.GetBusesOfStop(stat_command.description, buses)) {
+    const data::Stop* stop_ptr = transport_catalogue.GetStop(stat_command.description);
+    if (!stop_ptr) {
         output << "Stop "s << stat_command.description << ": not found"s << std::endl;
+        return;
     }
-    else {
-        if (buses.empty()) {
-            output << "Stop "s << stat_command.description << ": no buses"s << std::endl;
-        }
-        else {
-            output << "Stop "s << stat_command.description << ": buses"s;
-            for (auto bus : buses) {
-                output << " "s << bus;
-            }
-            output << std::endl;
-        }
+    std::set<std::string_view> buses = transport_catalogue.GetBusesOfStop(stop_ptr);
+    if (buses.empty()) {
+        output << "Stop "s << stat_command.description << ": no buses"s << std::endl;
+        return;
     }
+    output << "Stop "s << stat_command.description << ": buses"s;
+    for (auto bus : buses) {
+        output << " "s << bus;
+    }
+    output << std::endl;
 }
 
 void ParseAndPrintStat(const data::TransportCatalogue& transport_catalogue, std::string_view request, std::ostream& output) {
