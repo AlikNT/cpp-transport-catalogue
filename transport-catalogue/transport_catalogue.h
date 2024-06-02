@@ -5,51 +5,45 @@
 #include <string>
 #include <vector>
 #include <unordered_map>
+#include <map>
 
-#include "geo.h"
-
+#include "domain.h"
 
 namespace data {
-struct Stop {
-    std::string name;
-    geo::Coordinates coordinates;
-};
 
-struct Bus {
-    std::string name;
-    std::vector <const Stop*> route;
-};
-
-struct StopsHasher {
-    std::size_t operator()(const std::pair<std::string_view, std::string_view>& p) const;
-private:
-    std::hash<std::string_view> d_hasher;
-};
+    using StopsType = std::unordered_map<std::string_view, const Stop*>;
+    using BusesType = std::unordered_map<std::string_view, const Bus*>;
+    using SortedBusesType = std::map<std::string_view, const Bus*>;
+    using SortedStopsType = std::map<std::string_view, const Stop*>;
+    using DistanceType = std::unordered_map<std::pair<const Stop*, const Stop*>, int, StopsHasher>;
 
 class TransportCatalogue {
     // Реализуйте класс самостоятельно
-    using StopsType = std::unordered_map<std::string_view, const Stop*>;
-    using BusesType = std::unordered_map<std::string_view, const Bus*>;
-    using DistanceType = std::unordered_map<std::pair<std::string_view, std::string_view>, int, StopsHasher>;
 
 public:
-    void AddBusRoute(std::string_view bus_name, const std::vector<std::string_view>& stops);
-
+    void AddBusRoute(std::string_view bus_name, const std::vector<std::string_view> &stops,
+                     bool is_roundtrip);
     void AddStop(std::string_view stop_name, const geo::Coordinates& coordinates);
 
-    const Bus* GetRoute(std::string_view bus_name) const;
+    const Bus* GetBus(std::string_view bus_name) const;
+
+    SortedBusesType GetSortedBuses() const;
+
+    SortedStopsType GetSortedStops() const;
 
     const Stop* GetStop(std::string_view stop_name) const;
 
-    size_t GetStopsOfBus(const Bus *bus_ptr) const;
+    size_t GetNumberStopsOfBus(const Bus *bus_ptr) const;
 
-    size_t GetUniqueStopsOfBus(const Bus *bus_ptr) const;
+    size_t GetNumberUniqueStopsOfBus(const Bus *bus_ptr) const;
 
-    double GetBusRouteStraightLength(const Bus *bus_ptr) const;
+    std::vector<geo::Coordinates> GetAllCoordinates() const;
 
-    int GetBusRouteFactLength(const Bus *bus_ptr) const;
+    double GetStraightLength(const Bus *bus_ptr) const;
 
-    std::set<std::string_view> GetBusesOfStop(const Stop *stop_ptr_arg) const;
+    int GetFactLength(const Bus *bus_ptr) const;
+
+    std::set<std::string_view> GetBusesByStop(const Stop *stop_ptr_arg) const;
 
     void SetStopsDistance(std::string_view stop1, std::string_view stop2, int distance);
 
