@@ -16,13 +16,13 @@ namespace request {
 
 std::vector<std::string> ParseRoute(const json::Node &node);
 
-void MakeCatalogueFromJSON(const json::Document& doc, data::TransportCatalogue& catalogue);
+data::TransportCatalogue MakeCatalogueFromJSON(const json::Document &doc);
 
-void MakeStatOfBus(const StatRequest& stat_request, json::Array& stat_array, const data::TransportCatalogue &catalogue);
+json::Array& MakeStatOfBus(const StatRequest& stat_request, json::Array& stat_array, const data::TransportCatalogue &catalogue);
 
-void MakeStatOfStop(const StatRequest& stat_request, json::Array& stat_array, const data::TransportCatalogue &catalogue);
+json::Array& MakeStatOfStop(const StatRequest& stat_request, json::Array& stat_array, const data::TransportCatalogue &catalogue);
 
-void MakeStatOfMap(const StatRequest &stat_request, json::Array &stat_array, render::MapRenderer &map_renderer);
+json::Array& MakeStatOfMap(const StatRequest &stat_request, json::Array &stat_array, render::MapRenderer &map_renderer);
 
 json::Document StatRequestToJSON(const json::Document &doc, const data::TransportCatalogue &catalogue);
 

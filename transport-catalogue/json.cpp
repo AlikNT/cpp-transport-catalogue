@@ -363,89 +363,85 @@ void PrintNode(const Node& node, const PrintContext& ctx) {
 }  // namespace
 
 bool Node::IsNull() const {
-    return std::holds_alternative<std::nullptr_t>(value_);
+    return std::holds_alternative<std::nullptr_t>(*this);
 }
 
 bool Node::IsBool() const {
-    return std::holds_alternative<bool>(value_);;
+    return std::holds_alternative<bool>(*this);;
 }
 
 bool Node::IsInt() const {
-    return std::holds_alternative<int>(value_);
+    return std::holds_alternative<int>(*this);
 }
 
 bool Node::IsDouble() const {
-    return std::holds_alternative<double>(value_) || std::holds_alternative<int>(value_);
+    return std::holds_alternative<double>(*this) || std::holds_alternative<int>(*this);
 }
 
 bool Node::IsPureDouble() const {
-    return std::holds_alternative<double>(value_);
+    return std::holds_alternative<double>(*this);
 }
 
 bool Node::IsString() const {
-    return std::holds_alternative<std::string>(value_);
+    return std::holds_alternative<std::string>(*this);
 }
 
 bool Node::IsArray() const {
-    return std::holds_alternative<Array>(value_);
+    return std::holds_alternative<Array>(*this);
 }
 
 bool Node::IsMap() const {
-    return std::holds_alternative<Dict>(value_);
+    return std::holds_alternative<Dict>(*this);
 }
 
 int Node::AsInt() const {
     if (!IsInt()) {
-        throw std::logic_error("Type is not int."s);
+        throw std::logic_error("Type is not an int."s);
     }
-    return std::get<int>(value_);
+    return std::get<int>(*this);
 }
 
 bool Node::AsBool() const {
     if (!IsBool()) {
-        throw std::logic_error("Type is not bool."s);
+        throw std::logic_error("Type is not a bool."s);
     }
-    return std::get<bool>(value_);
+    return std::get<bool>(*this);
 }
 
 double Node::AsDouble() const {
     if (IsInt()) {
-        return get<int>(value_);
+        return get<int>(*this);
     }
     if (IsDouble()) {
-        return get<double>(value_);
+        return get<double>(*this);
     }
-    throw std::logic_error("Type is not double."s);
+    throw std::logic_error("Type is not a double."s);
 }
 
 const Array& Node::AsArray() const {
     if (!IsArray()) {
-        throw std::logic_error("Type is not array."s);
+        throw std::logic_error("Type is not an array."s);
     }
-    return std::get<Array>(value_);
+    return std::get<Array>(*this);
 }
 
 const Dict& Node::AsMap() const {
     if (!IsMap()) {
-        throw std::logic_error("Type is not map."s);
+        throw std::logic_error("Type is not a map."s);
     }
-    return std::get<Dict>(value_);
+    return std::get<Dict>(*this);
 }
 
 const string& Node::AsString() const {
     if (!IsString()) {
-        throw std::logic_error("Type is not string."s);
+        throw std::logic_error("Type is not a string."s);
     }
-    return std::get<std::string>(value_);
+    return std::get<std::string>(*this);
 }
 
 const Node::Value& Node::GetValue() const {
-    return value_;
+    return *this;
 }
-
-/*Node::Node(Node::Value value)
-       : value_(std::move(value)) {
-}*/
 
 bool Node::operator==(const Node &other) const {
     return value_ == other.value_;
@@ -453,34 +449,6 @@ bool Node::operator==(const Node &other) const {
 
 bool Node::operator!=(const Node &other) const {
     return !(*this == other);
-}
-
-Node::Node(int value)
-        : value_(value) {
-}
-
-Node::Node(double value)
-        : value_(value) {
-}
-
-Node::Node(std::string value)
-        : value_(value) {
-}
-
-Node::Node(std::nullptr_t value)
-        : value_(value) {
-}
-
-Node::Node(bool value)
-        : value_(value) {
-}
-
-Node::Node(Dict value)
-        : value_(value) {
-}
-
-Node::Node(Array value)
-        : value_(value) {
 }
 
 Document::Document(Node root)

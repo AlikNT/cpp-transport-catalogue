@@ -25,19 +25,22 @@ public:
 
 using Number = std::variant<int, double>;
 
-class Node {
+class Node final : private std::variant<std::nullptr_t, Array, Dict, bool, int, double, std::string> {
 public:
     /* Реализуйте Node, используя std::variant */
     using Value = std::variant<std::nullptr_t, Array, Dict, bool, int, double, std::string>;
 
-    Node() = default;
+    // Делаем доступными все конструкторы родительского класса variant
+    using variant::variant;
+
+/*    Node() = default;
     Node(Array value);
     Node(Dict value);
     Node(std::nullptr_t value);
     Node(bool value);
     Node(int value);
     Node(double value);
-    Node(std::string value);
+    Node(std::string value);*/
 
     bool IsNull() const;
     bool IsBool() const;

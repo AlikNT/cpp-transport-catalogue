@@ -17,7 +17,8 @@ std::vector<std::string> ParseRoute(const json::Node &node) {
     return stops;
 }
 
-void MakeCatalogueFromJSON(const json::Document &doc, data::TransportCatalogue &catalogue) {
+data::TransportCatalogue MakeCatalogueFromJSON(const json::Document &doc) {
+    data::TransportCatalogue catalogue;
     const json::Array &base_requests = doc.GetRoot().AsMap().at("base_requests"s).AsArray();
     for (const auto &requests: base_requests) {
         const auto& request = requests.AsMap();
@@ -44,16 +45,17 @@ void MakeCatalogueFromJSON(const json::Document &doc, data::TransportCatalogue &
             }
         }
     }
+    return catalogue;
 }
 
-void MakeStatOfBus(const StatRequest &stat_request, json::Array &stat_array, const data::TransportCatalogue &catalogue) {
+json::Array& MakeStatOfBus(const StatRequest &stat_request, json::Array &stat_array, const data::TransportCatalogue &catalogue) {
     auto bus_ptr = catalogue.GetBus(stat_request.name);
     if (!bus_ptr || bus_ptr->route.empty()) {
         stat_array.emplace_back(json::Dict{
                 {"request_id"s, stat_request.id},
                 {"error_message"s, "not found"s}
         });
-        return;
+        return stat_array;
     }
     int fact_route_length = catalogue.GetFactLength(bus_ptr);
     double curvature = fact_route_length / catalogue.GetStraightLength(bus_ptr);
@@ -66,17 +68,17 @@ void MakeStatOfBus(const StatRequest &stat_request, json::Array &stat_array, con
             {"stop_count"s, stop_count},
             {"unique_stop_count"s, unique_stop_count}
     });
+    return stat_array;
 }
 
-void
-MakeStatOfStop(const StatRequest &stat_request, json::Array &stat_array, const data::TransportCatalogue &catalogue) {
+json::Array& MakeStatOfStop(const StatRequest &stat_request, json::Array &stat_array, const data::TransportCatalogue &catalogue) {
     const data::Stop* stop_ptr = catalogue.GetStop(stat_request.name);
     if (!stop_ptr) {
         stat_array.emplace_back(json::Dict{
                 {"request_id"s, stat_request.id},
                 {"error_message"s, "not found"s}
         });
-        return;
+        return stat_array;
     }
     std::set<std::string_view> buses = catalogue.GetBusesByStop(stop_ptr);
     json::Array buses_array;
@@ -87,9 +89,10 @@ MakeStatOfStop(const StatRequest &stat_request, json::Array &stat_array, const d
             {"buses"s, buses_array},
             {"request_id"s, stat_request.id}
     });
+    return stat_array;
 }
 
-void MakeStatOfMap(const StatRequest &stat_request, json::Array &stat_array, render::MapRenderer &map_renderer) {
+json::Array& MakeStatOfMap(const StatRequest &stat_request, json::Array &stat_array, render::MapRenderer &map_renderer) {
     // Получаем параметры отрисовки из объекта json
     svg::Document map_doc;
     map_renderer.RenderMap(map_doc);
@@ -100,6 +103,7 @@ void MakeStatOfMap(const StatRequest &stat_request, json::Array &stat_array, ren
             {"map"s, map_stringstream.str()},
             {"request_id"s, stat_request.id}
     });
+    return stat_array;
 }
 
 json::Document StatRequestToJSON(const json::Document &doc, const data::TransportCatalogue &catalogue) {
@@ -113,10 +117,10 @@ json::Document StatRequestToJSON(const json::Document &doc, const data::Transpor
         stat_request.type = request.at("type"s).AsString();
         if (stat_request.type == "Bus"s) {
             stat_request.name = request.at("name"s).AsString();
-            MakeStatOfBus(stat_request, stat_array, catalogue);
+            stat_array = MakeStatOfBus(stat_request, stat_array, catalogue);
         } else if (stat_request.type == "Stop"s) {
             stat_request.name = request.at("name"s).AsString();
-            MakeStatOfStop(stat_request, stat_array, catalogue);
+            stat_array = MakeStatOfStop(stat_request, stat_array, catalogue);
         } else if (stat_request.type == "Map"s) {
             // Получаем параметры отрисовки из объекта json
             request::RenderSettings r_settings = request::LoadRenderSettings(doc);
@@ -127,7 +131,7 @@ json::Document StatRequestToJSON(const json::Document &doc, const data::Transpor
             // Создаем объект, который отвечает за визуализацию транспортного справочника
             render::MapRenderer map_renderer(catalogue, projector, r_settings);
 
-            MakeStatOfMap(stat_request, stat_array, map_renderer);
+            stat_array = MakeStatOfMap(stat_request, stat_array, map_renderer);
         }
     }
     return json::Document{stat_array};

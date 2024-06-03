@@ -16,8 +16,7 @@ int main() {
 
     // Парсим json, создаем объект json и объект транспортного каталога
     const auto json_requests_doc = json::Load(input_stream);
-    data::TransportCatalogue catalogue;
-    request::MakeCatalogueFromJSON(json_requests_doc, catalogue);
+    data::TransportCatalogue catalogue = request::MakeCatalogueFromJSON(json_requests_doc);
 
     // Парсим запросы к каталогу, создаем json документ с ответами и отправляем его в stdout
     const auto json_stat_doc = request::StatRequestToJSON(json_requests_doc, catalogue);
