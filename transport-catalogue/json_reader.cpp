@@ -5,6 +5,7 @@
 
 #include <sstream>
 #include "json_reader.h"
+#include "json_builder.h"
 
 namespace request {
 
@@ -19,9 +20,9 @@ std::vector<std::string> ParseRoute(const json::Node &node) {
 
 data::TransportCatalogue MakeCatalogueFromJSON(const json::Document &doc) {
     data::TransportCatalogue catalogue;
-    const json::Array &base_requests = doc.GetRoot().AsMap().at("base_requests"s).AsArray();
+    const json::Array &base_requests = doc.GetRoot().AsDict().at("base_requests"s).AsArray();
     for (const auto &requests: base_requests) {
-        const auto& request = requests.AsMap();
+        const auto& request = requests.AsDict();
         const std::string &request_type = request.at("type"s).AsString();
         const std::string &request_name = request.at("name"s).AsString();
         if (request_type == "Bus"s) {
@@ -37,7 +38,7 @@ data::TransportCatalogue MakeCatalogueFromJSON(const json::Document &doc) {
             double lat = request.at("latitude"s).AsDouble();
             double lng = request.at("longitude"s).AsDouble();
             catalogue.AddStop(request_name, geo::Coordinates{lat, lng});
-            for (const auto& [stop, distance] : request.at("road_distances"s).AsMap()) {
+            for (const auto& [stop, distance] : request.at("road_distances"s).AsDict()) {
                 if (!catalogue.GetStop(stop)) {
                     catalogue.AddStop(stop, {});
                 }
@@ -48,93 +49,99 @@ data::TransportCatalogue MakeCatalogueFromJSON(const json::Document &doc) {
     return catalogue;
 }
 
-json::Array& MakeStatOfBus(const StatRequest &stat_request, json::Array &stat_array, const data::TransportCatalogue &catalogue) {
+json::Node MakeStatOfBus(const StatRequest &stat_request, const data::TransportCatalogue &catalogue) {
     auto bus_ptr = catalogue.GetBus(stat_request.name);
     if (!bus_ptr || bus_ptr->route.empty()) {
-        stat_array.emplace_back(json::Dict{
-                {"request_id"s, stat_request.id},
-                {"error_message"s, "not found"s}
-        });
-        return stat_array;
+        return json::Builder{}
+            .StartDict()
+                .Key("request_id"s).Value(stat_request.id)
+                .Key("error_message"s).Value("not found"s)
+            .EndDict()
+            .Build();
     }
     int fact_route_length = catalogue.GetFactLength(bus_ptr);
     double curvature = fact_route_length / catalogue.GetStraightLength(bus_ptr);
     int stop_count = static_cast<int>(catalogue.GetNumberStopsOfBus(bus_ptr));
     int unique_stop_count = static_cast<int>(catalogue.GetNumberUniqueStopsOfBus(bus_ptr));
-    stat_array.emplace_back(json::Dict{
-            {"curvature"s, curvature},
-            {"request_id"s, stat_request.id},
-            {"route_length"s, fact_route_length},
-            {"stop_count"s, stop_count},
-            {"unique_stop_count"s, unique_stop_count}
-    });
-    return stat_array;
+    return json::Builder{}
+        .StartDict()
+            .Key("curvature"s).Value(curvature)
+            .Key("request_id"s).Value(stat_request.id)
+            .Key("route_length"s).Value(fact_route_length)
+            .Key("stop_count"s).Value(stop_count)
+            .Key("unique_stop_count"s).Value(unique_stop_count)
+        .EndDict()
+        .Build();
 }
 
-json::Array& MakeStatOfStop(const StatRequest &stat_request, json::Array &stat_array, const data::TransportCatalogue &catalogue) {
+json::Node MakeStatOfStop(const StatRequest &stat_request, const data::TransportCatalogue &catalogue) {
     const data::Stop* stop_ptr = catalogue.GetStop(stat_request.name);
     if (!stop_ptr) {
-        stat_array.emplace_back(json::Dict{
-                {"request_id"s, stat_request.id},
-                {"error_message"s, "not found"s}
-        });
-        return stat_array;
+        return json::Builder{}
+            .StartDict()
+                .Key("error_message"s).Value("not found"s)
+                .Key("request_id"s).Value(stat_request.id)
+            .EndDict()
+            .Build();
     }
     std::set<std::string_view> buses = catalogue.GetBusesByStop(stop_ptr);
     json::Array buses_array;
     for (auto bus : buses) {
         buses_array.emplace_back(std::string (bus));
     }
-    stat_array.emplace_back(json::Dict{
-            {"buses"s, buses_array},
-            {"request_id"s, stat_request.id}
-    });
-    return stat_array;
+    return json::Builder{}
+        .StartDict()
+            .Key("buses"s).Value(std::move(buses_array))
+            .Key("request_id"s).Value(stat_request.id)
+        .EndDict()
+        .Build();
 }
 
-json::Array& MakeStatOfMap(const StatRequest &stat_request, json::Array &stat_array, render::MapRenderer &map_renderer) {
+json::Node MakeStatOfMap(const StatRequest &stat_request, render::MapRenderer &map_renderer) {
     // Получаем параметры отрисовки из объекта json
     svg::Document map_doc;
     map_renderer.RenderMap(map_doc);
-    std::ostringstream map_stringstream;
-    map_doc.Render(map_stringstream);
-
-    stat_array.emplace_back(json::Dict{
-            {"map"s, map_stringstream.str()},
-            {"request_id"s, stat_request.id}
-    });
-    return stat_array;
+    std::ostringstream map_sstr;
+    map_doc.Render(map_sstr);
+    return json::Builder{}
+        .StartDict()
+            .Key("map"s).Value(std::move(map_sstr.str()))
+            .Key("request_id"s).Value(stat_request.id)
+        .EndDict()
+        .Build();
 }
 
-json::Document StatRequestToJSON(const json::Document &doc, const data::TransportCatalogue &catalogue) {
-    const json::Array &base_requests = doc.GetRoot().AsMap().at("stat_requests"s).AsArray();
-    // Создаем массив нового json
+json::Document StatRequestToJSON(const json::Document& doc, const data::TransportCatalogue& catalogue) {
+    auto x = json::Builder{};
+    const json::Array &base_requests = doc.GetRoot().AsDict().at("stat_requests"s).AsArray();
     json::Array stat_array;
-    for (const auto &requests: base_requests) {
-        const auto& request = requests.AsMap();
+    for (const auto& requests : base_requests) {
+        const auto& request = requests.AsDict();
         StatRequest stat_request;
         stat_request.id = request.at("id"s).AsInt();
         stat_request.type = request.at("type"s).AsString();
         if (stat_request.type == "Bus"s) {
             stat_request.name = request.at("name"s).AsString();
-            stat_array = MakeStatOfBus(stat_request, stat_array, catalogue);
+            stat_array.emplace_back(MakeStatOfBus(stat_request, catalogue));
         } else if (stat_request.type == "Stop"s) {
             stat_request.name = request.at("name"s).AsString();
-            stat_array = MakeStatOfStop(stat_request, stat_array, catalogue);
+            stat_array.emplace_back(MakeStatOfStop(stat_request, catalogue));
         } else if (stat_request.type == "Map"s) {
             // Получаем параметры отрисовки из объекта json
             request::RenderSettings r_settings = request::LoadRenderSettings(doc);
+
             // Создаем и инициализируем объект для проекции гео координат на плоскость
             std::vector<geo::Coordinates> all_coordinates = catalogue.GetAllCoordinates();
             render::SphereProjector projector(all_coordinates.begin(), all_coordinates.end(),
                                               r_settings.width, r_settings.height, r_settings.padding);
+
             // Создаем объект, который отвечает за визуализацию транспортного справочника
             render::MapRenderer map_renderer(catalogue, projector, r_settings);
 
-            stat_array = MakeStatOfMap(stat_request, stat_array, map_renderer);
+            stat_array.emplace_back(MakeStatOfMap(stat_request, map_renderer));
         }
     }
-    return json::Document{stat_array};
+    return json::Document{json::Builder{}.Value(stat_array).Build()};
 }
 
 svg::Color ColorFromJsonToSvg(const json::Node &color) {
@@ -154,7 +161,7 @@ svg::Color ColorFromJsonToSvg(const json::Node &color) {
 
 RenderSettings LoadRenderSettings(const json::Document &doc) {
     RenderSettings result;
-    const json::Dict &render_settings = doc.GetRoot().AsMap().at("render_settings"s).AsMap();
+    const json::Dict &render_settings = doc.GetRoot().AsDict().at("render_settings"s).AsDict();
     result.width = render_settings.at("width"s).AsDouble();
     result.height = render_settings.at("height"s).AsDouble();
     result.padding = render_settings.at("padding"s).AsDouble();
