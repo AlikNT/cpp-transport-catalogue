@@ -4,11 +4,12 @@ using namespace std::literals;
 
 namespace json {
 
-json::Builder::Builder() {
-    nodes_stack_.emplace_back(&root_);
+json::Builder::Builder()
+    : root_()
+    , nodes_stack_{&root_} {
 }
 
-KeyItemContext json::Builder::Key(std::string value) {
+Builder::DictValueContext Builder::Key(std::string value) {
     CheckAfterBuild();
     if (!nodes_stack_.back()->IsDict()) {
         throw std::logic_error("Key must be called only inside Dict and not just after another key."s);
@@ -20,10 +21,10 @@ KeyItemContext json::Builder::Key(std::string value) {
     }
     nodes_stack_.emplace_back(&(it->second));
 
-    return KeyItemContext{*this};
+    return BaseContext{*this};
 }
 
-ValueItemContext Builder::Value(Node::Value value) {
+Builder::BaseContext Builder::Value(Node::Value value) {
     CheckAfterBuild();
     CheckCorrectCall();
     if (nodes_stack_.back()->IsArray()) {
@@ -35,10 +36,10 @@ ValueItemContext Builder::Value(Node::Value value) {
         nodes_stack_.back()->GetValue() = std::move(value);
         nodes_stack_.pop_back();
     }
-    return ValueItemContext{*this};
+    return *this;
 }
 
-DictItemContext json::Builder::StartDict() {
+Builder::DictItemContext json::Builder::StartDict() {
     CheckAfterBuild();
     CheckCorrectCall();
     auto back_node_ptr = nodes_stack_.back();
@@ -49,10 +50,10 @@ DictItemContext json::Builder::StartDict() {
     } else {
         nodes_stack_.back()->GetValue() = Dict{};
     }
-    return DictItemContext{*this};
+    return BaseContext{*this};
 }
 
-ArrayItemContext json::Builder::StartArray() {
+Builder::ArrayItemContext json::Builder::StartArray() {
     CheckAfterBuild();
     CheckCorrectCall();
     auto back_node_ptr = nodes_stack_.back();
@@ -63,10 +64,10 @@ ArrayItemContext json::Builder::StartArray() {
     } else {
         back_node_ptr->GetValue() = Array{};
     }
-    return ArrayItemContext{*this};
+    return BaseContext{*this};
 }
 
-json::Builder &json::Builder::EndDict() {
+Builder::BaseContext json::Builder::EndDict() {
     CheckAfterBuild();
     if (nodes_stack_.back()->IsArray()) {
         throw std::logic_error("EndDict must be called only after StartDict"s);
@@ -75,7 +76,7 @@ json::Builder &json::Builder::EndDict() {
     return *this;
 }
 
-json::Builder &json::Builder::EndArray() {
+Builder::BaseContext json::Builder::EndArray() {
     CheckAfterBuild();
     if (nodes_stack_.back()->IsDict()) {
         throw std::logic_error("EndArray must be called only after StartArray"s);
@@ -84,7 +85,7 @@ json::Builder &json::Builder::EndArray() {
     return *this;
 }
 
-json::Node json::Builder::Build() {
+Node json::Builder::Build() {
     if (root_.IsNull()) {
         throw std::logic_error("Build must not be called just after constructor."s);
     }
@@ -106,65 +107,39 @@ void Builder::CheckCorrectCall() {
     }
 }
 
-DictItemContext KeyItemContext::Value(Node::Value value) {
-    GetBuilder().Value(std::move(value));
-    return DictItemContext{GetBuilder()};
+Node Builder::BaseContext::Build() {
+    return builder_.Build();
 }
 
-ArrayItemContext KeyItemContext::StartArray() {
-    return GetBuilder().StartArray();
+Builder::DictValueContext Builder::BaseContext::Key(std::string value) {
+    return builder_.Key(std::move(value));
 }
 
-DictItemContext KeyItemContext::StartDict() {
-    return GetBuilder().StartDict();
+Builder::BaseContext Builder::BaseContext::Value(Node::Value value) {
+    return builder_.Value(std::move(value));
 }
 
-ArrayItemContext ValueItemContext::StartArray() {
-    return GetBuilder().StartArray();
+Builder::DictItemContext Builder::BaseContext::StartDict() {
+    return builder_.StartDict();
 }
 
-KeyItemContext ValueItemContext::Key(std::string value) {
-    return GetBuilder().Key(std::move(value));
+Builder::ArrayItemContext Builder::BaseContext::StartArray() {
+    return builder_.StartArray();
 }
 
-Builder &ValueItemContext::EndDict() {
-    return GetBuilder().EndDict();
+Builder::BaseContext Builder::BaseContext::EndDict() {
+    return builder_.EndDict();
 }
 
-Builder &ValueItemContext::EndArray() {
-    return GetBuilder().EndArray();
+Builder::BaseContext Builder::BaseContext::EndArray() {
+    return builder_.EndArray();
 }
 
-Node ValueItemContext::Build() {
-    return GetBuilder().Build();
+Builder::DictItemContext Builder::DictValueContext::Value(Node::Value value) {
+    return BaseContext::Value(std::move(value));
 }
 
-KeyItemContext DictItemContext::Key(std::string value) {
-    return GetBuilder().Key(std::move(value));
-}
-
-Builder &DictItemContext::EndDict() {
-    return GetBuilder().EndDict();
-}
-
-ArrayItemContext &ArrayItemContext::Value(Node::Value value) {
-    GetBuilder().Value(std::move(value));
-    return *this;
-}
-
-DictItemContext ArrayItemContext::StartDict() {
-    return GetBuilder().StartDict();
-}
-
-Builder &ArrayItemContext::EndArray() {
-    return GetBuilder().EndArray();
-}
-
-ArrayItemContext ArrayItemContext::StartArray() {
-    return GetBuilder().StartArray();
-}
-
-Builder &ItemContext::GetBuilder() {
-    return builder_;
+Builder::ArrayItemContext Builder::ArrayItemContext::Value(Node::Value value) {
+    return BaseContext::Value(std::move(value));
 }
 } // namespace json

@@ -1,31 +1,22 @@
 #include "json.h"
 
-
 namespace json {
 
-class DictItemContext;
-class ArrayItemContext;
-class KeyItemContext;
-class ValueItemContext;
-
-
 class Builder {
+private:
+    class BaseContext;
+    class DictValueContext;
+    class DictItemContext;
+    class ArrayItemContext;
+
 public:
-
     Builder();
-
-    KeyItemContext Key(std::string value);
-
-    ValueItemContext Value(Node::Value value);
-
+    DictValueContext Key(std::string value);
+    BaseContext Value(Node::Value value);
     DictItemContext StartDict();
-
     ArrayItemContext StartArray();
-
-    Builder& EndDict();
-
-    Builder& EndArray();
-
+    BaseContext EndDict();
+    BaseContext EndArray();
     Node Build();
 
 private:
@@ -34,65 +25,54 @@ private:
 
     void CheckAfterBuild();
     void CheckCorrectCall();
-};
 
-class ItemContext {
-public:
-    ItemContext(Builder& builder) : builder_(builder) {}
+    class BaseContext {
+    public:
+        BaseContext(Builder& builder) : builder_(builder) {}
 
-    Builder& GetBuilder();
+        Node Build();
+        DictValueContext Key(std::string value);
+        BaseContext Value (Node::Value value);
+        DictItemContext StartDict();
+        ArrayItemContext StartArray();
+        BaseContext EndDict();
+        BaseContext EndArray();
 
-private:
-    Builder& builder_;
-};
+    private:
+        Builder& builder_;
+    };
 
-class ValueItemContext : ItemContext {
-public:
-    using ItemContext::ItemContext;
+    class DictValueContext : public BaseContext {
+    public:
+        DictValueContext(BaseContext base_context) : BaseContext(base_context) {}
 
-    KeyItemContext Key(std::string value);
+        DictItemContext Value(Node::Value value);
+        Node Build() = delete;
+        DictValueContext Key(std::string value) = delete;
+        BaseContext EndArray() = delete;
+        BaseContext EndDict() = delete;
+    };
 
-    ArrayItemContext StartArray();
+    class DictItemContext : public BaseContext {
+    public:
+        DictItemContext(BaseContext base_context) : BaseContext(base_context) {}
 
-    Builder& EndDict();
+        Node Build() = delete;
+        BaseContext Value(Node::Value value) = delete;
+        BaseContext EndArray() = delete;
+        DictItemContext StartDict() = delete;
+        ArrayItemContext StartArray() = delete;
+    };
 
-    Builder& EndArray();
+    class ArrayItemContext : public BaseContext {
+    public:
+        ArrayItemContext(BaseContext base_context) : BaseContext(base_context) {}
 
-    Node Build();
-};
-
-class KeyItemContext : public ItemContext {
-public:
-    using ItemContext::ItemContext;
-
-    DictItemContext Value(Node::Value value);
-
-    ArrayItemContext StartArray();
-
-    DictItemContext StartDict();
-
-};
-
-class DictItemContext : public ItemContext {
-public:
-    using ItemContext::ItemContext;
-
-    KeyItemContext Key(std::string value);
-
-    Builder& EndDict();
-};
-
-class ArrayItemContext : public ItemContext {
-public:
-    using ItemContext::ItemContext;
-
-    ArrayItemContext& Value(Node::Value value);
-
-    DictItemContext StartDict();
-
-    ArrayItemContext StartArray();
-
-    Builder& EndArray();
+        ArrayItemContext Value(Node::Value value);
+        Node Build() = delete;
+        DictValueContext Key(std::string value) = delete;
+        BaseContext EndDict() = delete;
+    };
 };
 
 } // namespace json
