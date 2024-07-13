@@ -25,6 +25,16 @@ public:
                      bool is_roundtrip);
     void AddStop(std::string_view stop_name, const geo::Coordinates& coordinates);
 
+    void SetStopsDistance(std::string_view stop1, std::string_view stop2, int distance);
+
+    int GetDistance(const Stop* stop_ptr_1, const Stop* stop_ptr_2) const;
+
+    size_t GetBusesCount() const;
+
+    size_t GetStopsCount() const;
+
+    const BusesType &GetBuses() const;
+
     const Bus* GetBus(std::string_view bus_name) const;
 
     SortedBusesType GetSortedBuses() const;
@@ -44,8 +54,6 @@ public:
     int GetFactLength(const Bus *bus_ptr) const;
 
     std::set<std::string_view> GetBusesByStop(const Stop *stop_ptr_arg) const;
-
-    void SetStopsDistance(std::string_view stop1, std::string_view stop2, int distance);
 
 private:
     std::deque<Stop> stops_catalog_;

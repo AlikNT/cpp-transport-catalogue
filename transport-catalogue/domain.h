@@ -52,8 +52,6 @@ struct RenderSettings {
     double line_width;
     double stop_radius;
     int bus_label_font_size;
-//    std::string font_family;
-//    std::string font_weight;
     RenderOffset bus_label_offset;
     int stop_label_font_size;
     RenderOffset stop_label_offset;
@@ -62,14 +60,31 @@ struct RenderSettings {
     std::vector<svg::Color> color_palette;
 };
 
-} // namespace request
+struct RoutingSettings {
+    int bus_wait_time = 0;
+    double bus_velocity = 0;
+};
 
-namespace request {
 
 struct StatRequest {
     int id;
     std::string type;
     std::string name;
+    std::string from;
+    std::string to;
+};
+
+struct Route {
+    bool is_wait;
+    const data::Stop* stop;
+    const data::Bus* bus;
+    double weight;
+    int span_count;
+};
+
+struct StatRouteInfo {
+    double weight;
+    std::vector<Route> route;
 };
 
 } // namespace request
