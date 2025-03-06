@@ -1,7 +1,7 @@
 ## Transport catalogue
 
 #### Description
-The transport directory manages data on stops, buses, and routes. It processes queries, provides relevant information, and is capable of generating a route map. Input data and queries are received via JSON through standard input (stdin), while the program's responses are output to standard output (stdout).
+The transport catalugue manages data on stops, buses, and routes. It processes queries, provides relevant information, and is capable of generating a route map. Input data and queries are received via JSON through standard input (stdin), while the program's responses are output to standard output (stdout).
 <details>
   <summary>Example of input JSON</summary>
 
