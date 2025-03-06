@@ -1,7 +1,7 @@
 ## Transport catalogue
 
 #### Description
-The transport directory manages data on stops, buses, and routes. It processes queries, provides relevant information, and is capable of generating a route map. Input data and queries are received via JSON through standard input (stdin), while the program's responses are output to standard output (stdout).
+The transport directory manages data on stops, buses, and routes. It processes queries, provides relevant information, and is capable of generating a route map. Input data and queries are received via JSON through standard input (stdin), while the program's responses are output to standard output (stdout).\
 Example of input JSON:
 ```Bash
   {
@@ -132,6 +132,84 @@ Example of input JSON:
       ]
   }
 ```
+Example of output JSON:
+```Bash
+  [
+      {
+          "curvature": 1.42963,
+          "request_id": 1,
+          "route_length": 5990,
+          "stop_count": 4,
+          "unique_stop_count": 3
+      },
+      {
+          "curvature": 1.30156,
+          "request_id": 2,
+          "route_length": 11570,
+          "stop_count": 5,
+          "unique_stop_count": 3
+      },
+      {
+          "buses": [
+              "297",
+              "635"
+          ],
+          "request_id": 3
+      },
+      {
+          "items": [
+              {
+                  "stop_name": "Biryulyovo Zapadnoye",
+                  "time": 6,
+                  "type": "Wait"
+              },
+              {
+                  "bus": "297",
+                  "span_count": 2,
+                  "time": 5.235,
+                  "type": "Bus"
+              }
+          ],
+          "request_id": 4,
+          "total_time": 11.235
+      },
+      {
+          "items": [
+              {
+                  "stop_name": "Biryulyovo Zapadnoye",
+                  "time": 6,
+                  "type": "Wait"
+              },
+              {
+                  "bus": "297",
+                  "span_count": 2,
+                  "time": 5.235,
+                  "type": "Bus"
+              },
+              {
+                  "stop_name": "Universam",
+                  "time": 6,
+                  "type": "Wait"
+              },
+              {
+                  "bus": "635",
+                  "span_count": 1,
+                  "time": 6.975,
+                  "type": "Bus"
+              }
+          ],
+          "request_id": 5,
+          "total_time": 24.21
+      }
+  ]
+```
+<details>
+  <summary>Press to see</summary>
+  ```Bash
+  sudo apt update && sudo apt upgrade
+  ```
+</details>
+
 
 #### Build
 
