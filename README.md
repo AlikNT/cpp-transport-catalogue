@@ -139,7 +139,7 @@ The transport directory manages data on stops, buses, and routes. It processes q
 <details>
   <summary>Example of output JSON</summary>
 
-    ```Bash
+  ```Bash
     [
         {
             "curvature": 1.42963,
