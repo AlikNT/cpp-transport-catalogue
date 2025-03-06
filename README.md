@@ -205,10 +205,9 @@ Example of output JSON:
 ```
 <details>
   <summary>Press to see</summary>
-```Bash
-sudo apt update && sudo apt upgrade
-```
-</details>
+  ```Bash
+  sudo apt update && sudo apt upgrade
+</details>```
 
 
 #### Build
