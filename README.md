@@ -211,6 +211,5 @@ The transport directory manages data on stops, buses, and routes. It processes q
   ```
 </details>
 
-#### Build
-
-#### Run
+#### Build and run
+The program can be built and run in any popular IDE that supports C++.
