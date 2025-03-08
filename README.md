@@ -1,7 +1,7 @@
 ## Transport catalogue
 
 ![C++](https://img.shields.io/badge/С++-8A2BE2)
-!(https://img.shields.io/badge/JSON-8A2BE2)
+![JSON](https://img.shields.io/badge/JSON-8A2BE2)
 
 #### Description
 The transport catalugue manages data on stops, buses, and routes. It processes queries, provides relevant information, and is capable of generating a route map. Input data and queries are received via JSON through standard input (stdin), while the program's responses are output to standard output (stdout).
