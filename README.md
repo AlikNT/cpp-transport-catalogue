@@ -1,6 +1,6 @@
 ## Transport catalogue
 
-![C++](https://img.shields.io/badge/С++-00599C)
+![C++17](https://img.shields.io/badge/С++17-00599C)
 ![JSON](https://img.shields.io/badge/JSON-FFA500)
 ![SVG](https://img.shields.io/badge/SVG-FFB13B)
 ![CMake](https://img.shields.io/badge/CMake-D1242F)
